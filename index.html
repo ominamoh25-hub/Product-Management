@@ -1,30 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Product Management App</title>
 
-  <!-- Supabase JS CDN -->
+  <!-- Supabase JS -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f5f6fa;
+      background-color: #f4f6f8;
       padding: 40px;
     }
 
     h1 {
       text-align: center;
+      margin-bottom: 20px;
     }
 
-    .container {
-      max-width: 600px;
+    .app {
+      max-width: 700px;
       margin: auto;
-      background: #ffffff;
+      background: white;
       padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
 
     form {
@@ -33,32 +34,31 @@
       margin-bottom: 20px;
     }
 
-    input[type="text"] {
+    input {
       flex: 1;
-      padding: 8px;
+      padding: 10px;
       font-size: 16px;
     }
 
     button {
-      padding: 8px 12px;
-      cursor: pointer;
+      padding: 10px 15px;
       border: none;
+      cursor: pointer;
       border-radius: 4px;
-      font-size: 14px;
     }
 
     .add-btn {
-      background-color: #2ecc71;
+      background-color: #28a745;
       color: white;
     }
 
     .edit-btn {
-      background-color: #3498db;
-      color: white;
+      background-color: #ffc107;
+      margin-right: 5px;
     }
 
     .delete-btn {
-      background-color: #e74c3c;
+      background-color: #dc3545;
       color: white;
     }
 
@@ -68,9 +68,9 @@
     }
 
     th, td {
-      padding: 10px;
+      padding: 12px;
       border-bottom: 1px solid #ddd;
-      text-align: left;
+      text-align: center;
     }
 
     th {
@@ -80,13 +80,13 @@
 </head>
 <body>
 
-  <div class="container">
+  <div class="app">
     <h1>Product Management App</h1>
 
     <!-- Add Product Form -->
-    <form id="product-form">
-      <input type="text" id="product-name" placeholder="Enter product name" required />
-      <button type="submit" class="add-btn">Add Product</button>
+    <form id="productForm">
+      <input type="text" id="productName" placeholder="Enter product name" required>
+      <button class="add-btn" type="submit">Add Product</button>
     </form>
 
     <!-- Products Table -->
@@ -97,28 +97,39 @@
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody id="products-table">
-        <!-- Products will be loaded here -->
-      </tbody>
+      <tbody id="productsTable"></tbody>
     </table>
   </div>
 
   <script>
-    /****************************
-     * Supabase Configuration
-     ****************************/
+    // Supabase API connection
     const { createClient } = supabase;
-    const supabaseUrl = 'https://hpxldvkzmdlkcjmzhpjp.supabase.co'; // Replace
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhweGxkdmt6bWRsa2NqbXpocGpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNjc2NjcsImV4cCI6MjA4MTY0MzY2N30.RrWvcK0Lcfv-QHh4FQ3kMv8RLnv6qYa-EVS-nS68KPc'; // Replace
+    const supabaseUrl = 'https://noqxtwisabkdlcydrxkv.supabase.co'; // Replace with your Supabase URL
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcXh0d2lzYWJrZGxjeWRyeGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNTU3NjMsImV4cCI6MjA4MTYzMTc2M30.noWJTEFk1LXkV52zma60UF-JDWHl7whrS1Q3sba2Ajo'; // Replace with your Supabase Key
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    const productsTable = document.getElementById('products-table');
-    const productForm = document.getElementById('product-form');
-    const productNameInput = document.getElementById('product-name');
+    const form = document.getElementById('productForm');
+    const productNameInput = document.getElementById('productName');
+    const productsTable = document.getElementById('productsTable');
 
-    /****************************
-     * Fetch Products
-     ****************************/
+    // Load products when page loads
+    document.addEventListener('DOMContentLoaded', fetchProducts);
+
+    // Add product
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = productNameInput.value.trim();
+      if (!name) return;
+
+      await supabaseClient
+        .from('products')
+        .insert([{ name }]);
+
+      productNameInput.value = '';
+      fetchProducts();
+    });
+
+    // Fetch products
     async function fetchProducts() {
       const { data, error } = await supabaseClient
         .from('products')
@@ -134,7 +145,6 @@
 
       data.forEach(product => {
         const row = document.createElement('tr');
-
         row.innerHTML = `
           <td>${product.name}</td>
           <td>
@@ -142,76 +152,34 @@
             <button class="delete-btn" onclick="deleteProduct(${product.id})">Delete</button>
           </td>
         `;
-
         productsTable.appendChild(row);
       });
     }
 
-    /****************************
-     * Add Product
-     ****************************/
-    productForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const name = productNameInput.value.trim();
-      if (!name) return;
-
-      const { error } = await supabaseClient
-        .from('products')
-        .insert([{ name }]);
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      productNameInput.value = '';
-      fetchProducts();
-    });
-
-    /****************************
-     * Edit Product
-     ****************************/
+    // Edit product
     async function editProduct(id, currentName) {
-      const newName = prompt('Edit product name:', currentName);
+      const newName = prompt('Enter new product name:', currentName);
       if (!newName) return;
 
-      const { error } = await supabaseClient
+      await supabaseClient
         .from('products')
         .update({ name: newName })
         .eq('id', id);
 
-      if (error) {
-        console.error(error);
-        return;
-      }
-
       fetchProducts();
     }
 
-    /****************************
-     * Delete Product
-     ****************************/
+    // Delete product
     async function deleteProduct(id) {
       if (!confirm('Are you sure you want to delete this product?')) return;
 
-      const { error } = await supabaseClient
+      await supabaseClient
         .from('products')
         .delete()
         .eq('id', id);
 
-      if (error) {
-        console.error(error);
-        return;
-      }
-
       fetchProducts();
     }
-
-    /****************************
-     * Load Products on Page Load
-     ****************************/
-    fetchProducts();
   </script>
 
 </body>
